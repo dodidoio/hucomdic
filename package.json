@@ -1,0 +1,33 @@
+{
+  "name": "hucomdic",
+  "version": "0.1.1",
+  "description": "Upload files to the human-computer dictionary and dodido server",
+  "main": "index.js",
+	"bin":{"hucomdic":"cli.js"},
+  "directories": {
+    "doc": "docs"
+  },
+  "dependencies": {
+    "dodido-client": "file:c:/dropbox/dev/github/dodido-client",
+		"fs-extra" : "",
+		"colors":""
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "tap test/*.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dodidoio/hucomdic.git"
+  },
+  "keywords": [
+    "human-computer-dictionary",
+    "hucomdic"
+  ],
+  "author": "Elchanan Shor",
+  "license": "MPL-2.0",
+  "bugs": {
+    "url": "https://github.com/dodidoio/hucomdic/issues"
+  },
+  "homepage": "https://github.com/dodidoio/hucomdic#readme"
+}
