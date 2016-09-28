@@ -3,14 +3,18 @@
   "version": "0.1.1",
   "description": "Upload files to the human-computer dictionary and dodido server",
   "main": "index.js",
-	"bin":{"hucomdic":"cli.js"},
+	"bin":{
+		"hucomdic":"cli.js",
+		"bot":"bot.js"
+	},
   "directories": {
     "doc": "docs"
   },
   "dependencies": {
     "dodido-client": "file:c:/dropbox/dev/github/dodido-client",
 		"fs-extra" : "",
-		"colors":""
+		"colors":"",
+		"uuid":""
   },
   "devDependencies": {},
   "scripts": {
