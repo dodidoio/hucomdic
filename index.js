@@ -29,7 +29,7 @@ function log(text){
 }
 
 function uploadManifest(path){
-	const id = pathLib.parse(path).base.replace(/\\/g,'/');
+	const id = pathLib.relative(process.cwd(),path).replace(/\\/g,'/');
 	var manifest = null;
 	try{
 		manifest = fs.readJsonSync(path);
@@ -50,6 +50,7 @@ function uploadManifest(path){
 		}
 	}).then(()=>{
 		processing--;
+		fileCount++;
 		log("Uploaded manifest " + id);
 		if(processing === 0){
 			exit();
@@ -58,7 +59,7 @@ function uploadManifest(path){
 }
 
 function uploadFile(path){
-	const id = pathLib.parse(path).base.replace(/\\/g,'/');
+	const id = pathLib.relative(process.cwd(),path).replace(/\\/g,'/');
 	var file = null;
 	try{
 		file = fs.readFileSync(path);
@@ -79,6 +80,7 @@ function uploadFile(path){
 		}
 	}).then(()=>{
 		processing--;
+		fileCount++;
 		log("Uploaded file " + id);
 		if(processing === 0){
 			exit();
@@ -92,14 +94,13 @@ function upload(path){
 	switch(ext){
 		case 'dic':
 		case 'bot':
-			fileCount++;
 			uploadManifest(path);
 			break;
 		case 'js':
 		case 'json':
-			if(pathLib.parse(path).base !== '.dodido.json')//ignore .dodido.json file
-				fileCount++;
+			if(pathLib.parse(path).base !== '.dodido.json'){//ignore .dodido.json file
 				uploadFile(path);
+			}
 			break;
 		default:
 			ignoreCount++;
@@ -115,10 +116,11 @@ function uploadList(files){
 	}
 }
 
-function uploadAll(dir){
+function uploadAll(dir,since){
+	since = since || 0;
 	fs.walk(dir)
 		.on('data', (item)=> {
-			if(!item.stats.isDirectory()){
+			if(!item.stats.isDirectory() && item.stats.mtime > since){
 				upload(item.path);
 			}
 		}).on('end',function(){
