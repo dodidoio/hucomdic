@@ -5,6 +5,8 @@ const pathLib = require('path');
 const server = require('dodido-client');
 const colors = require('colors');
 const client = require('dodido-client');
+const show = require('./show');
+const context = {};//the context to pass to all requests - it contains token and userid
 var config = null;
 var configFile = null;
 var rl = null;
@@ -14,19 +16,19 @@ function clearActiveRequest(){
 	activeRequest = {req:null,interact:true};
 }
 function showSend(text){
-	console.log(text.yellow);
+	show(text,'send');
 }
 
 function showLog(text){
-	console.log(text.grey);
+	show(text,'log');
 }
 
 function showReceive(text){
-	console.log(text.cyan);
+	show(text,'receive');
 }
 
 function showError(text){
-	console.log(text.red.bold);
+	show(text,'error');
 }
 
 function saveConfig(){
@@ -71,7 +73,7 @@ function main(){
 		console.info('\t--clear,-c\tStart a new context but don\'t erase other information');
 		console.info('after starting the bot, the following commands are available:');
 		console.info('\t+{package-name} -  add package {package-name}');
-		console.info('\t-{package-name} -  remove package {package-name}');
+		console.info('\t.remove{package-name} -  remove package {package-name}');
 		console.info('\t.exit - exit the command line');
 		console.info('\t.config - show bot configuration object');
 		process.exit(0);
@@ -87,7 +89,10 @@ function main(){
 	}
 	if(!config.bot || args.new){
 		//initialize bot
-		config.bot = {packages:[],cid:require('uuid').v4()};
+		config.bot = {
+			packages:[],//packages the bot should use
+			cid:require('uuid').v4(),//context id - generate a new one
+			download:'download'};//directory used for downloaded files
 		saveConfig();
 	}
 	
@@ -98,6 +103,8 @@ function main(){
 	}
 	
 	//connect to server
+	context.token = config.token;
+	context.userid = config.userid || null;
 	client.connect(config.server || DEFAULTSERVER,config.token).then(()=>{
 		showLog("Connected to server - write your request and then click <Enter>");
 		const readline = require('readline');
@@ -123,9 +130,11 @@ function main(){
 				const input = {
 					input:line,
 					packages : config.bot.packages.join(','),
-					expecting:'action'
+					expecting : 'action',
+					token : context.token,
+					userid : context.userid
 				};
-				const newRequest = client.request(input,config.bot.cid)
+				const newRequest = client.request(input,config.bot.cid,false,context)
 					.on('say',(text)=>{
 						showReceive(text);
 						activeRequest.interact = true;
@@ -134,12 +143,15 @@ function main(){
 						showError(err);
 					}).on('log',(log)=>{
 						showLog(log);
+					}).on('show',(obj,type)=>{
+						show(obj,type,config.bot);
 					}).on('fail',()=>{
 						activeRequest.interact = true;
 						showError('I could not understand your request. Can you please rephrase?');
 					}).on('options',(options)=>{
-						showReceive('I can interpret your request in several ways:');
-						showReceive(JSON.stringify(options));
+						//do not handle several possible options. Dodido just executes best fit
+						//showReceive('I can interpret your request in several ways:');
+						//showReceive(JSON.stringify(options));
 					}).on('ask',(message,id,description,expecting)=>{
 						rl.question(message + "? ",(answer)=>{
 							client.answer(id,answer,expecting).on('error',(err)=>{
