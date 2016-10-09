@@ -14,7 +14,8 @@
     "dodido-client": "file:c:/dropbox/dev/github/dodido-client",
 		"fs-extra" : "",
 		"colors":"",
-		"uuid":""
+		"uuid":"",
+		"cli-table2":""
   },
   "devDependencies": {},
   "scripts": {
