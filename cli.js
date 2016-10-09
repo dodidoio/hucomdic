@@ -57,7 +57,7 @@ function init(){
 			pswd = answer;
 			server.connect(args.server||DEFAULTSERVER).then(()=>{
 				return server.signin(username,pswd).on('token',(token)=>{
-					config = {server:args.server||DEFAULTSERVER,token:token};
+					config = {server:args.server||DEFAULTSERVER,token:token,userid:username};
 					fs.writeJSONSync(configFile,config);
 				}).on('error',(err)=>{
 					console.error(`Error singing in to server - ${err}`.red.bold);
