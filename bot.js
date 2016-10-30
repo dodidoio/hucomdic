@@ -55,27 +55,105 @@ var commands = {
 	exit : function(){
 		process.exit(0);
 	},
+	clear : function(){
+		config.bot.cid = require('uuid').v4();
+		saveConfig();
+	},
 	help : function(){
-		showReceive('No help yet');
+		showCommandLineHelp();
 	},
 	config : function(){
 		showLog(JSON.stringify(config.bot));
+	},
+	call : function(text){
+		processText(text,'call');
+	},
+	context : function(){
+		processText('dumpContext@dodido/interact','call');
 	}
 };
+
+function showCommandLineHelp(){
+	console.info('The following command are available from the bot command line:');
+	console.info('    +{package-name} -  add package {package-name}');
+	console.info('    .remove{package-name} -  remove package {package-name}');
+	console.info('    .exit - exit the command line');
+	console.info('    .context - show the execution context. This action only shows context entities that are stored on the server - not those that are passed by the bot');
+	console.info('    .clear - clear the active context');
+	console.info('    .call {function} - call a function within a package - function is written in the format "functionName@owner/package bindingArguments?" as used in the bind property of dictionary entries');
+	console.info('    .config - show bot configuration object');
+}
+
+/**
+ * Process text. The processing depends on the type. The default type is 'request' - send a request to dodido server.
+ * For call, the function treats the input as function binding and calls that function.
+ * @param {string} text processed text
+ * @param {string} type  one of 'request','call','parsed'
+ */
+function processText(text,type){
+	let isParsed = false;
+	let input;
+	switch(type){
+		case 'parsed':
+			input = text;
+			isParsed = true;
+			break;
+		case 'call':
+			input = `call(${text})`;
+			isParsed = true;
+			break;
+		default:
+			input = {
+				input : text,
+				packages : config.bot.packages.join(','),
+				expecting : 'action',
+				token : context.token,
+				userid : context.userid
+			};
+	}
+	const newRequest = client.request(input,config.bot.cid,isParsed,context)
+		.on('say',(text)=>{
+			showReceive(text);
+			activeRequest.interact = true;
+		}).on('error',(err)=>{
+			activeRequest.interact = true;
+			showError(err);
+		}).on('log',(log)=>{
+			showLog(log);
+		}).on('show',(obj,type)=>{
+			show(obj,type,config.bot);
+		}).on('fail',()=>{
+			activeRequest.interact = true;
+			showError('I could not understand your request. Can you please rephrase?');
+		}).on('options',(options)=>{
+			//do not handle several possible options. Dodido just executes best fit
+			//showReceive('I can interpret your request in several ways:');
+			//showReceive(JSON.stringify(options));
+		}).on('ask',(message,id,description,expecting)=>{
+			rl.question(message + "? ",(answer)=>{
+				client.answer(id,answer,expecting).on('error',(err)=>{
+					showError(err);
+				}).on('fail',()=>{
+					showError('Could not understand your answer');
+				});
+			});
+		}).then(()=>{
+			if(!activeRequest.interact)
+				showReceive('Done');
+			rl.prompt();
+		});
+	activeRequest = {req:newRequest,interact:false};
+}
 
 function main(){
 	var args = require('minimist')(process.argv.slice(2),{alias:{help:'h',dir:'d',file:'f'}});
 	if(args.help){
 		console.info('Usage bot {OPTIONS}');
-		console.info('\t--help\tShow this message');
-		console.info('\t--dir,-d\tSpecify the directory to upload');
-		console.info('\t--new,-n\tStart a new session - erase history from previous session');
-		console.info('\t--clear,-c\tStart a new context but don\'t erase other information');
-		console.info('after starting the bot, the following commands are available:');
-		console.info('\t+{package-name} -  add package {package-name}');
-		console.info('\t.remove{package-name} -  remove package {package-name}');
-		console.info('\t.exit - exit the command line');
-		console.info('\t.config - show bot configuration object');
+		console.info('    --help\tShow this message');
+		console.info('    --dir,-d\tSpecify the directory to upload');
+		console.info('    --new,-n\tStart a new session - erase history from previous session');
+		console.info('    --clear,-c\tStart a new context but don\'t erase other information');
+		showCommandLineHelp();
 		process.exit(0);
 	}
 	const syncDir = require('path').resolve(args.dir || process.cwd());
@@ -127,45 +205,7 @@ function main(){
 				}
 				rl.prompt();
 			}else{
-				const input = {
-					input:line,
-					packages : config.bot.packages.join(','),
-					expecting : 'action',
-					token : context.token,
-					userid : context.userid
-				};
-				const newRequest = client.request(input,config.bot.cid,false,context)
-					.on('say',(text)=>{
-						showReceive(text);
-						activeRequest.interact = true;
-					}).on('error',(err)=>{
-						activeRequest.interact = true;
-						showError(err);
-					}).on('log',(log)=>{
-						showLog(log);
-					}).on('show',(obj,type)=>{
-						show(obj,type,config.bot);
-					}).on('fail',()=>{
-						activeRequest.interact = true;
-						showError('I could not understand your request. Can you please rephrase?');
-					}).on('options',(options)=>{
-						//do not handle several possible options. Dodido just executes best fit
-						//showReceive('I can interpret your request in several ways:');
-						//showReceive(JSON.stringify(options));
-					}).on('ask',(message,id,description,expecting)=>{
-						rl.question(message + "? ",(answer)=>{
-							client.answer(id,answer,expecting).on('error',(err)=>{
-								showError(err);
-							}).on('fail',()=>{
-								showError('Could not understand your answer');
-							});
-						});
-					}).then(()=>{
-						if(!activeRequest.interact)
-							showReceive('Done');
-						rl.prompt();
-					});
-				activeRequest = {req:newRequest,interact:false};
+				processText(line);
 			}
 		});
 

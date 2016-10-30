@@ -2,8 +2,9 @@ const colors = require('colors');
 const Table = require('cli-table2');
 const fs = require('fs');
 const path = require('path');
-
-const MAX_TABLE_LENGTH = 140;
+const _ = require('underscore');
+const MAX_TABLE_LENGTH = 120;
+const MAX_OBJECT_TEXT = 200;
 const CELL_PADDING = 2;
 /* jshint laxbreak:true */
 
@@ -13,10 +14,12 @@ module.exports = function(obj,type,config){
 		|| obj.type 
 		|| (Array.isArray(obj)?'list':null) 
 		|| (obj.$meta && obj.$meta.type? obj.$meta.type : null);
-	
 	switch(type){
 		case 'send':
 			console.info(obj.yellow);
+			return true;
+		case 'text':
+			console.info(obj.cyan);
 			return true;
 		case 'error':
 			console.info(obj.red.bold);
@@ -29,8 +32,12 @@ module.exports = function(obj,type,config){
 			return true;
 		case 'entity-list':
 			return showList(obj);
+		case 'entity-properties':
+			return showEntityProperties(obj);
 		case 'table':
 			return showTable(obj);
+		case 'grouping':
+			return showGrouping(obj,config);
 		case 'file':
 			return showFile(obj,config);
 		default:
@@ -88,9 +95,9 @@ function showTable(obj){
 		head : [""].concat(obj.columns),
 		style : {compact:true}});
 	obj.rows.forEach((elem,index)=>{
-		table.push([index+1].concat(asText(elem)));
+		table.push([index+1].concat(elem.map((cell)=>asText(cell))));
 	});
-	console.log(table.toString());
+	console.info(table.toString());
 	return true;
 }
 
@@ -108,6 +115,13 @@ function asText(obj){
 		return "";
 	}else if(!isNaN(Date.parse(obj))){
 		return new Date(obj).toLocaleString();
+	}else if(typeof obj === 'object'){
+		let text = JSON.stringify(obj);
+		if(text.length > MAX_OBJECT_TEXT){
+			return text.substr(0,MAX_OBJECT_TEXT-3) + '...';
+		}else{
+			return text;
+		}
 	}else{
 		return obj.toString();
 	}
@@ -147,4 +161,35 @@ function saveFile(filename,buf,dir,counter){
 		console.error('Error saving downloaded file - ' + err);
 		return Promise.reject(err);
 	});
+}
+
+function showEntityProperties(entity){
+	let rows = entity.properties.map((elem)=>elem.value !== undefined?[elem.name,asText(elem.value)] : null);
+	let table = new Table({
+		colWidths : calculateColWidths(rows),
+		style : {compact:true}});
+	table.push([{colSpan:2,content:entity.title.green}]);
+	table.push(['name'.red,'value'.red]);
+	rows.forEach((elem)=>{
+		if(elem)
+			table.push(elem);
+	});
+	console.info(table.toString());
+	return true;
+}
+
+function showGrouping(entity,config){
+	const all = entity.groups.map((elem)=>Object.keys(elem.aggregate));
+	const columns = _.union.apply(this,all);
+	const rows = entity.groups.map((group)=>[group.title].concat(columns.map((col)=>group.aggregate[col] || '')));
+	//console.log('rows\n',rows.join('\n'));
+	let table = new Table({
+		colWidths : calculateColWidths(rows),
+		head: ['Group'].concat(columns),
+		style : {compact:true}});
+	rows.forEach((row)=>{
+		table.push(row);
+	});
+	console.info(table.toString());
+	return true;
 }
