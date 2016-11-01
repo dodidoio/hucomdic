@@ -11,7 +11,7 @@
     "doc": "docs"
   },
   "dependencies": {
-    "dodido-client": "file:c:/dropbox/dev/github/dodido-client",
+    "dodido-client": "https://github.com/dodidoio/dodido-client.git",
 		"fs-extra" : "",
 		"colors":"",
 		"uuid":"",
