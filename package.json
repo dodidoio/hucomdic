@@ -1,6 +1,6 @@
 {
   "name": "hucomdic",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Upload files to the human-computer dictionary and dodido server",
   "main": "index.js",
 	"bin":{
@@ -8,7 +8,7 @@
 		"bot":"bot.js"
 	},
 	"dependencies": {
-		"dodido-client": "dodido-client",
+		"dodido-client": "",
 			"fs-extra" : "",
 			"colors":"",
 			"uuid":"",
