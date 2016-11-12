@@ -10,13 +10,12 @@ var args = require('minimist')(process.argv.slice(2),{alias:{help:'h',dir:'d',fi
 
 if(args.help){
 	console.info('Usage: $hucomdic {OPTIONS}');
+	console.info('\tinit,-i\tInitialize a new environment. This should be called for first time use.');
 	console.info('\t--help\tShow this message');
 	console.info('\t--dir,-d\tSpecify the directory to upload');
-	console.info('\t--init,-i\tInitialize a new environment');
-	console.info('\t--file,-f\tSpecify the directory to upload');
-	console.info("First time use: call '$hucomdic init' to initialize the environment for use with the human-computer dictionary");
 	console.info('\t--file,-f\tSpecify the file to upload');
 	console.info('\t--all,-a\tUpload all files - default is upload only files changed since last upload');
+	console.info("First time use: call '$hucomdic init' to initialize the environment for use with the human-computer dictionary. This command will create a .dodido.json file in the current working dir");
 	process.exit(0);
 }
 
