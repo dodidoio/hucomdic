@@ -6,7 +6,7 @@ const server = require('dodido-client');
 
 const DEFAULTSERVER = "wss://assist.dodido.io";
 var config = null;
-var args = require('minimist')(process.argv.slice(2),{alias:{help:'h',dir:'d',file:'f',init:'i',server:'s'}});
+var args = require('minimist')(process.argv.slice(2),{alias:{help:'h',dir:'d',file:'f',init:'i',server:'s',all:'a'}});
 
 if(args.help){
 	console.info('Usage: $hucomdic {OPTIONS}');
@@ -15,6 +15,8 @@ if(args.help){
 	console.info('\t--init,-i\tInitialize a new environment');
 	console.info('\t--file,-f\tSpecify the directory to upload');
 	console.info("First time use: call '$hucomdic init' to initialize the environment for use with the human-computer dictionary");
+	console.info('\t--file,-f\tSpecify the file to upload');
+	console.info('\t--all,-a\tUpload all files - default is upload only files changed since last upload');
 	process.exit(0);
 }
 
@@ -83,12 +85,16 @@ function upload(){
 		}else{
 			//write last update date
 			since = config.lastUpdate || 0;
+			if(args.all){
+				//upload all files - set since to 0
+				since = 0;
+			}
 			config.lastUpdate = Date.now();
 			fs.writeJSONSync(configFile,config);
 			require('.').uploadAll(syncDir,since);
 		}
 	}catch(err){
-		error("An error occured while uploading files - " + err);
-		exit(-1);
+		console.error("An error occured while uploading files - " + err);
+		process.exit(-1);
 	}
 }
