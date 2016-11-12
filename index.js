@@ -1,9 +1,9 @@
 const fs = require('fs-extra');
 const pathLib = require('path');
 const server = require('dodido-client');
+const readline = require('readline');
 const colors = require('colors');
 var processing = 0;
-var lastMessageLength = 0;
 var errorCount = 0;
 var ignoreCount = 0;
 var fileCount = 0;
@@ -15,17 +15,19 @@ function connect(url,token){
 
 function error(text){
 	errorCount++;
+	readline.clearLine(process.stdout);
 	console.error(text.red.bold);
 }
 
+//messages are different from error and log in that they are overwritten by following messages
+function message(text){
+	readline.clearLine(process.stdout);
+	process.stdout.write(text);
+	readline.cursorTo(process.stdout, 0);
+}
 function log(text){
-	var spaces = "";
-	for(var i=0;i<lastMessageLength;++i){
-		spaces += ' ';
-	}
-	process.stdout.write(spaces + '\r');
-	lastMessageLength = text.length;
-	process.stdout.write(text + '\r');
+	readline.clearLine(process.stdout);
+	console.log(text);
 }
 
 function uploadManifest(path){
@@ -42,16 +44,22 @@ function uploadManifest(path){
 		return;
 	}
 	processing++;
+	fileCount++;
+	var errorMessage = null;
 	server.saveManifest(id,manifest).on('error',function(err){
-		error(`Error uploading manifest ${id} - ${err}`);
+		errorMessage = err;
+	}).then(()=>{
+		if(errorMessage){
+			return Promise.reject(errorMessage);
+		}
 		processing--;
+		message("Uploaded manifest " + id);
 		if(processing === 0){
 			exit();
 		}
-	}).then(()=>{
+	}).catch((err)=>{
+		error(`Error uploading manifest ${id} - ${err}`);
 		processing--;
-		fileCount++;
-		log("Uploaded manifest " + id);
 		if(processing === 0){
 			exit();
 		}
@@ -65,6 +73,10 @@ function uploadFile(path){
 		file = fs.readFileSync(path);
 	}catch(e){
 		error(`Error loading file ${path} - ${e}`);
+		processing--;
+		if(processing === 0){
+			exit();
+		}
 		return;
 	}
 	if(!file){
@@ -72,16 +84,22 @@ function uploadFile(path){
 		return;
 	}
 	processing++;
+	fileCount++;
+	var errorMessage = null;
 	server.saveFile(id,file).on('error',(err)=>{
-		error(`Error uploading file ${id} - ${err}`);
+		errorMessage = err;
+	}).then(()=>{
+		if(errorMessage){
+			return Promise.reject(errorMessage);
+		}
 		processing--;
+		message("Uploaded file " + id);
 		if(processing === 0){
 			exit();
 		}
-	}).then(()=>{
+	}).catch((err)=>{
+		error(`Error uploading file ${id} - ${err}`);
 		processing--;
-		fileCount++;
-		log("Uploaded file " + id);
 		if(processing === 0){
 			exit();
 		}
@@ -94,6 +112,7 @@ function upload(path){
 	switch(ext){
 		case 'dic':
 		case 'bot':
+		case 'hook':
 			uploadManifest(path);
 			break;
 		case 'js':
@@ -132,7 +151,7 @@ function uploadAll(dir,since){
 
 function exit(){
 	if(errorCount){
-		log(`Completed uploading ${fileCount} files with ${errorCount} errors`.red.bold);
+		log(`Completed processing ${fileCount} files with ${errorCount} errors`.red.bold);
 	}else{
 		log(`Completed uploading ${fileCount} files`.green);
 	}
