@@ -1,3 +1,5 @@
+//show.js
+//handle showing the user content in the console
 const colors = require('colors');
 const Table = require('cli-table2');
 const fs = require('fs');

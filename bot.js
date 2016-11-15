@@ -12,9 +12,14 @@ var configFile = null;
 var rl = null;
 var activeRequest = null;
 clearActiveRequest();
+
+/**
+ * Clear the active request
+ */
 function clearActiveRequest(){
 	activeRequest = {req:null,interact:true};
 }
+
 function showSend(text){
 	show(text,'send');
 }
@@ -31,16 +36,22 @@ function showError(text){
 	show(text,'error');
 }
 
+/**
+ * Save config file (.dodido.json)
+ */
 function saveConfig(){
 	fs.writeJSONSync(configFile,config);
 }
 
+//list of dot command
 var commands = {
 	add : function(line){
+		//add a package to the list of packages the bot recognizes
 		config.bot.packages = config.bot.packages.concat(line.split(',').map((element)=>element.trim()));
 		saveConfig();
 	},
 	remove : function(line){
+		//remove a package from the list of packages
 		const index = config.bot.packages.indexOf(line);
 		if(index === -1){
 			showError(`Package '${line}' was not found in the list of packages. Cannot remove it`);
@@ -50,25 +61,32 @@ var commands = {
 		}
 	},
 	echo : function(line){
+		//just echo back some text - for debug
 		showReceive(line);
 	},
 	exit : function(){
+		//exit the bot application
 		process.exit(0);
 	},
 	clear : function(){
+		//clear the context - just generate a new cid randomly
 		config.bot.cid = require('uuid').v4();
 		saveConfig();
 	},
 	help : function(){
+		//show help text
 		showCommandLineHelp();
 	},
 	config : function(){
+		//show config file
 		showLog(JSON.stringify(config.bot));
 	},
 	call : function(text){
+		//call a dictionary javascript function
 		processText(text,'call');
 	},
 	context : function(){
+		//show active context by calling the dumpContext function
 		processText('dumpContext@dodido/interact','call');
 	}
 };
@@ -95,27 +113,32 @@ function processText(text,type){
 	let input;
 	switch(type){
 		case 'parsed':
+			//don't need to pass the request though the NLP engine - the text is in the format the server recognizes
 			input = text;
 			isParsed = true;
 			break;
 		case 'call':
+			//call a specific function from the dictionary modules.
 			input = `call(${text})`;
 			isParsed = true;
 			break;
 		default:
 			input = {
-				input : text,
-				packages : config.bot.packages.join(','),
-				expecting : 'action',
-				token : context.token,
-				userid : context.userid
+				input : text, //request text
+				packages : config.bot.packages.join(','),//list of packages defined in the config file
+				expecting : 'action',//user request is always of type 'action'
+				token : context.token,//token of the account data is stored in
+				userid : context.userid//userid of the request sender. A single token owner may manage many userids
 			};
 	}
+	//create a request
 	const newRequest = client.request(input,config.bot.cid,isParsed,context)
 		.on('say',(text)=>{
+			//handle say event
 			showReceive(text);
 			activeRequest.interact = true;
 		}).on('error',(err)=>{
+			//handle error event
 			activeRequest.interact = true;
 			showError(err);
 		}).on('log',(log)=>{
@@ -123,22 +146,23 @@ function processText(text,type){
 		}).on('show',(obj,type)=>{
 			show(obj,type,config.bot);
 		}).on('fail',()=>{
+			//fail event is called when server cannot interpret the user request
 			activeRequest.interact = true;
 			showError('I could not understand your request. Can you please rephrase?');
-		}).on('options',(options)=>{
-			//do not handle several possible options. Dodido just executes best fit
-			//showReceive('I can interpret your request in several ways:');
-			//showReceive(JSON.stringify(options));
 		}).on('ask',(message,id,description,expecting)=>{
+			//ask the user a question
 			rl.question(message + "? ",(answer)=>{
+				//after getting an answer, send the answer to the server with question id and expected type
 				client.answer(id,answer,expecting).on('error',(err)=>{
 					showError(err);
 				}).on('fail',()=>{
+					//handle event where server could not understand the user request
 					showError('Could not understand your answer');
 				});
 			});
 		}).then(()=>{
 			if(!activeRequest.interact)
+				//if bot did not send any text to the user, print out 'done' so the user knows the action was handled
 				showReceive('Done');
 			rl.prompt();
 		});
@@ -169,20 +193,20 @@ function main(){
 		//initialize bot
 		config.bot = {
 			packages:[],//packages the bot should use
-			cid:require('uuid').v4(),//context id - generate a new one
+			cid:require('uuid').v4(),//conversation id - generate a new id for a new conversation
 			download:'download'};//directory used for downloaded files
 		saveConfig();
 	}
 	
 	if(args.clear){
-		//start new context
+		//start a new conversation by generating a new conversation id
 		config.bot.cid = require('uuid').v4();
 		saveConfig();
 	}
 	
 	//connect to server
-	context.token = config.token;
-	context.userid = config.userid || null;
+	context.token = config.token; //set the request token
+	context.userid = config.userid || null; //set the request context userid
 	client.connect(config.server || DEFAULTSERVER,config.token).then(()=>{
 		showLog("Connected to server - write your request and then click <Enter>");
 		const readline = require('readline');
