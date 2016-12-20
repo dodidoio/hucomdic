@@ -11,6 +11,7 @@ var config = null;
 var configFile = null;
 var rl = null;
 var activeRequest = null;
+var lastQuestion = null;
 clearActiveRequest();
 
 /**
@@ -123,6 +124,23 @@ function processText(text,type){
 			isParsed = true;
 			break;
 		default:
+			if(lastQuestion){
+				//we are waiting for an answer
+				//if expecting is an array then get the answer with the relevant number
+				let answer = text;
+				if(lastQuestion.options && !Number.isNaN(parseInt(text)) && parseInt(text) <=lastQuestion.expecting.length && parseInt(text) > 0){
+					answer = lastQuestion.options[parseInt(text)-1];
+				}
+				//after getting an answer, send the answer to the server with question id and expected type
+				client.answer(lastQuestion.id,answer,lastQuestion.expecting).on('error',(err)=>{
+					showError(err);
+				}).on('fail',()=>{
+					//handle event where server could not understand the user request
+					showError('Could not understand your answer');
+				});
+				lastQuestion = null;//question already answered
+				return;
+			}
 			input = {
 				input : text, //request text
 				packages : config.bot.packages.join(','),//list of packages defined in the config file
@@ -132,35 +150,39 @@ function processText(text,type){
 			};
 	}
 	//create a request
-	const newRequest = client.request(input,config.bot.cid,isParsed,context)
-		.on('say',(text)=>{
+	const newRequest = client.request(input,config.bot.cid,isParsed,context);
+		newRequest.on('say',(text)=>{
 			//handle say event
 			showReceive(text);
 			activeRequest.interact = true;
-		}).on('error',(err)=>{
+		});
+	newRequest.on('error',(err)=>{
 			//handle error event
 			activeRequest.interact = true;
 			showError(err);
-		}).on('log',(log)=>{
+		});
+	newRequest.on('log',(log)=>{
 			showLog(log);
-		}).on('show',(obj,type)=>{
+		});
+	newRequest.on('show',(obj,type)=>{
 			show(obj,type,config.bot);
-		}).on('fail',()=>{
+		});
+	newRequest.on('fail',()=>{
 			//fail event is called when server cannot interpret the user request
 			activeRequest.interact = true;
 			showError('I could not understand your request. Can you please rephrase?');
-		}).on('ask',(message,id,description,expecting)=>{
+		});
+	newRequest.on('ask',(message,id,description,expecting)=>{
 			//ask the user a question
-			rl.question(message + "? ",(answer)=>{
-				//after getting an answer, send the answer to the server with question id and expected type
-				client.answer(id,answer,expecting).on('error',(err)=>{
-					showError(err);
-				}).on('fail',()=>{
-					//handle event where server could not understand the user request
-					showError('Could not understand your answer');
-				});
-			});
-		}).then(()=>{
+			lastQuestion = {
+				message:message,
+				options:Array.isArray(expecting)?expecting:null,
+				expecting:Array.isArray(expecting)?text:expecting,
+				id:id
+			};
+			show(lastQuestion,'question',config.bot);
+		});
+	newRequest.then(()=>{
 			if(!activeRequest.interact)
 				//if bot did not send any text to the user, print out 'done' so the user knows the action was handled
 				showReceive('Done');

@@ -42,6 +42,8 @@ module.exports = function(obj,type,config){
 			return showGrouping(obj,config);
 		case 'file':
 			return showFile(obj,config);
+		case 'question':
+			return showQuestion(obj);
 		default:
 			return false;
 	}
@@ -193,5 +195,12 @@ function showGrouping(entity,config){
 		table.push(row);
 	});
 	console.info(table.toString());
+	return true;
+}
+function showQuestion(obj){
+	console.info(obj.message + (obj.message.match(/\?$/)? "" : "?"));
+	if(obj.options){
+		obj.options.forEach((elem,index)=>{console.info(`${index+1}. ${elem}`);});
+	}
 	return true;
 }
