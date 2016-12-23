@@ -89,6 +89,14 @@ var commands = {
 	context : function(){
 		//show active context by calling the dumpContext function
 		processText('dumpContext@dodido/interact','call');
+	},
+	whoami : function(){
+		//show the name of the user
+		client.whoami().on('error',(err)=>{
+			showError(err);
+		}).on('userid',(userid)=>{
+			showReceive(userid);
+		});
 	}
 };
 
@@ -101,6 +109,7 @@ function showCommandLineHelp(){
 	console.info('    .clear - clear the active context');
 	console.info('    .call {function} - call a function within a package - function is written in the format "functionName@owner/package bindingArguments?" as used in the bind property of dictionary entries');
 	console.info('    .config - show bot configuration object');
+	console.info('    .whoami - show user name');
 }
 
 /**
