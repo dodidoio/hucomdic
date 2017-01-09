@@ -1,0 +1,81 @@
+[
+  {
+    "pattern": "hello world",
+    "bind": "some@function/here",
+    "description": "some description",
+    "entry": "pattern",
+    "output": "hello world(some@function/here)"
+  },
+  {
+    "entry": "pattern",
+    "pattern": "hello",
+    "type": "action",
+    "output": "\"hello\""
+  },
+  {
+    "entry": "pattern",
+    "pattern": "hello",
+    "type": "action",
+    "bind": "bind@function/here",
+    "description": "this is a remark",
+    "output": "hello(bind@function/here)"
+  },
+  {
+    "entry": "pattern",
+    "pattern": "hello",
+    "type": "action",
+    "output": "this is output",
+    "description": "another remark"
+  },
+  {
+    "entry": "concept",
+    "name": "funny concept",
+    "type": "funny concept",
+    "description": "concept description"
+  },
+  {
+    "name": "property 1",
+    "type": "type1",
+    "plural": "property 1S",
+    "propertyType": "property",
+    "$container": "concept#funny concept"
+  },
+  {
+    "entry": "property",
+    "name": "another name",
+    "type": "another type",
+    "description": "this is a property remark",
+    "plural": "another names",
+    "propertyType": "property",
+    "$container": "concept#funny concept"
+  },
+  {
+    "entry": "property",
+    "name": "yet another name",
+    "type": "yet another type",
+    "plural": "yet another names",
+    "propertyType": "property",
+    "$container": "concept#funny concept"
+  },
+  {
+    "entry": "pattern",
+    "pattern": "[address] is in [location]",
+    "type": "boolean",
+    "bind": "some@function/here",
+    "output": "[1] is in [2](some@function/here)"
+  },
+  {
+    "entry": "pattern",
+    "pattern": "[text] starts with [text]",
+    "type": "boolean",
+    "bind": "some@function/here",
+    "output": "[1] starts with [2](some@function/here)"
+  },
+  {
+    "entry": "pattern",
+    "pattern": "me",
+    "type": "person",
+    "bind": "me@some/package",
+    "output": "me(me@some/package)"
+  }
+]

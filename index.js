@@ -3,6 +3,8 @@ const pathLib = require('path');
 const server = require('dodido-client');
 const readline = require('readline');
 const colors = require('colors');
+const normalizeDictionary = require('./normalize-dictionary');
+
 var processing = 0;
 var errorCount = 0;
 var ignoreCount = 0;
@@ -46,6 +48,9 @@ function uploadManifest(path){
 	processing++;
 	fileCount++;
 	var errorMessage = null;
+	if(path.match(/\.dic$/)){
+		manifest = normalizeDictionary(manifest);
+	}
 	server.saveManifest(id,manifest).on('error',function(err){
 		errorMessage = err;
 	}).then(()=>{

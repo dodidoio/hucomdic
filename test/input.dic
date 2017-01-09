@@ -1,0 +1,26 @@
+[
+	{
+		"pattern":"hello world",
+		"bind":"some@function/here",
+		"description":"some description"
+	},
+	"hello(action)",
+	"-- this is a remark that should not output anything",
+	"hello=>bind@function/here//this is a remark",
+	"hello=>>this is output//another remark",
+	{
+		"entry":"concept",
+		"name":"funny concept",
+		"description":"concept description",
+		"include":"test/one,test/two , test/three",
+		"properties":[
+			{"name":"property 1","type":"type1"},
+			"another name(another type)//this is a property remark",
+			"yet another name(yet another type)"
+		]
+	},
+	"[address] is in [location](boolean)=>some@function/here",
+	"[text] starts with [text](boolean)=>some@function/here",
+	"me(person)=>me@some/package"
+	
+]
