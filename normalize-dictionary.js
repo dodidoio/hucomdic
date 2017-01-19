@@ -1,4 +1,4 @@
-/* jshint esnext:true */
+/* jshint esversion:6 */
 const pluralize = require('pluralize');
 const DEFAULT_TYPE = 'action';
 
@@ -143,9 +143,10 @@ function normalizeFullStringFormat(writer,entry){
 		generated.type = match[2] || DEFAULT_TYPE;
 		if(match[3]=='=>'){
 			generated.bind = match[4];
-		}
-		if(match[3]=='=>>'){
+		}else if(match[3]=='=>>'){
 			generated.output = match[4];
+		}else{
+			generated.bind = `text@dodido/pojo ${JSON.stringify(match[1])}`;
 		}
 		generated.description = match[5];
 		writer(generated);
@@ -175,17 +176,10 @@ function normalizeEntryField(writer,entry){
 }
 function normalizeConcept(writer,entry){
 	if(entry.entry === 'concept'){
-		writer({
-			entry:'concept',
-			name:	entry.name || entry.type,
-			type:	entry.type || entry.name,
-			description:entry.description,
-			bind:entry.bind
-		});
 		(entry.properties||[]).forEach((prop)=>{
 			if(typeof prop === 'string'){
 				//we are using here the shorthand text format - parse it
-				let match = prop.match(/^([^\(]+)(?:\((.+)\))?(?:\/\/(.*))?$/);
+				let match = prop.match(/^([^\(]+?)\s*(?:\((.+?)\))?\s*(?:\/\/(.*))?$/);
 				prop = {name:match[1],type:match[2]||match[1],description:match[3]};
 			}
 			prop.entry = 'property';
@@ -193,43 +187,25 @@ function normalizeConcept(writer,entry){
 			if(prop.type && prop.type.match(/^(.+)\*$/)){
 				//this is a collection property
 				prop.singular = pluralize.singular(prop.name);
-				prop.stype = prop.type.match(/^(.*)\*$/)[1];
-				prop.propertyType = 'collection';
+				prop['item type'] = '[' + prop.type.match(/^(.*)\*$/)[1] + ']';
+				prop['property type'] = 'collection';
 			}else if(prop.type && prop.type==='boolean'){
 				//this is a trait
-				prop.propertyType = 'trait';
+				prop['property type'] = 'trait';
 			}else{
-				prop.propertyType = 'property';
+				prop['property type'] = 'property';
 			}
 			prop.$container = "concept:" + (entry.name||entry.type);
 			writer(prop);
 		});
-	}else{
-		writer(entry);
+		entry.name = entry.name || entry.type;
+		entry.type = entry.type || entry.name;
 	}
+	writer(entry);
 }
 
-function normalizeRegex(entry,module){
-	if(entry.outputType === 'concept'){
-		entry.type = entry.type + '.text';
-	}
-	return entry;
-}
-
-function normalizeEntry(entry,module){
-	if(entry.bindClass || entry.entityType === 'class' || entry.entry === 'concept'){
-		return normalizeClassEntry(entry,module);
-	}else if(entry.regex){
-		//no normalization for regex yet
-		return normalizeRegex(entry,module);
-	}else if(typeof entry === 'string' || typeof entry.pattern === 'string'){
-		return normalizePatternEntry(entry,module);
-	}else if(entry.entry){
-		return entry;
-	}
-}
 function logger(writer,entry){
-	console.log('ENTRY',JSON.stringify(entry));
+	console.info('ENTRY',JSON.stringify(entry));
 	writer(entry);
 }
 
