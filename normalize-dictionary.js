@@ -136,7 +136,7 @@ function normalizeFullStringFormat(writer,entry){
 		//this is a remark - do nothing
 			return;
 	}
-	const match = entry.match(/^(.*?)(?:\((.*)\))?(?:(=>>|=>)(.+?))?(?:\/\/(.*))?$/);
+	const match = entry.match(/^(.*?)(?:\((.*?)\))?(?:(=>>|=>)(.+?))?(?:\/\/(.*))?$/);
 	if(match){
 		let generated = {entry:'pattern'};
 		generated.pattern = match[1];
@@ -146,7 +146,7 @@ function normalizeFullStringFormat(writer,entry){
 		}else if(match[3]=='=>>'){
 			generated.output = match[4];
 		}else{
-			generated.bind = `text@dodido/pojo ${JSON.stringify(match[1])}`;
+			generated.bind = `text@dodido/pojo ${JSON.stringify(outputFromPattern(match[1]))}`;
 		}
 		generated.description = match[5];
 		writer(generated);
@@ -154,14 +154,22 @@ function normalizeFullStringFormat(writer,entry){
 }
 
 
+/**
+ * This the output property when not set
+ * @param {[[Type]]} writer [[Description]]
+ * @param {object}   entry  [[Description]]
+ */
 function normalizeOutput(writer,entry){
-	if(entry.entry === 'pattern' && entry.pattern && !entry.output && entry.bind){
-		entry.output = outputFromPattern(entry.pattern,entry.bind);
-	}else if(entry.entry === 'pattern' && entry.pattern && !entry.output){
-		entry.output = JSON.stringify(entry.pattern);
+	if(entry.entry === 'pattern' && typeof entry.pattern === 'string'&& !entry.output){
+		if(entry.bind){
+			entry.output = outputFromPattern(entry.pattern,entry.bind);
+		}else{
+			entry.output = JSON.stringify(entry.pattern);
+		}
 	}
 	writer(entry);
 }
+
 function normalizeEntryField(writer,entry){
 	if(!entry.entry){
 		if(entry.regex){
@@ -174,6 +182,7 @@ function normalizeEntryField(writer,entry){
 	}
 	writer(entry);
 }
+
 function normalizeConcept(writer,entry){
 	if(entry.entry === 'concept'){
 		(entry.properties||[]).forEach((prop)=>{
@@ -183,23 +192,30 @@ function normalizeConcept(writer,entry){
 				prop = {name:match[1],type:match[2]||match[1],description:match[3]};
 			}
 			prop.entry = 'property';
-			prop.plural = typeof prop.name === 'string'? pluralize.plural(prop.name) : undefined;
-			if(prop.type && prop.type.match(/^(.+)\*$/)){
-				//this is a collection property
-				prop.singular = pluralize.singular(prop.name);
-				prop['item type'] = '[' + prop.type.match(/^(.*)\*$/)[1] + ']';
-				prop['property type'] = 'collection';
-			}else if(prop.type && prop.type==='boolean'){
-				//this is a trait
-				prop['property type'] = 'trait';
-			}else{
-				prop['property type'] = 'property';
-			}
 			prop.$container = "concept:" + (entry.name||entry.type);
-			writer(prop);
+			normalizeProperty(writer,prop);
 		});
 		entry.name = entry.name || entry.type;
 		entry.type = entry.type || entry.name;
+	}
+	writer(entry);
+}
+
+function normalizeProperty(writer,entry){
+	if(entry.entry === 'property'){
+		entry.plural = typeof entry.name === 'string'? pluralize.plural(entry.name) : undefined;
+		if(entry.type && entry.type.match(/^(.+)\*$/)){
+			//this is a collection property
+			entry.singular = pluralize.singular(entry.name);
+			entry['item type'] = '[' + entry.type.match(/^(.*)\*$/)[1] + ']';
+			entry['$item concept'] = "concept:"+entry.type.match(/^(.*)\*$/)[1];
+			entry['property type'] = 'collection';
+		}else if(entry.type && entry.type==='boolean'){
+			//this is a trait
+			entry['property type'] = 'trait';
+		}else{
+			entry['property type'] = 'property';
+		}
 	}
 	writer(entry);
 }
@@ -210,7 +226,7 @@ function logger(writer,entry){
 }
 
 module.exports = function(dictionary){
-	let pipe = pipeNormalizer([normalizeFullStringFormat, normalizeEntryField, normalizeOutput, normalizeConcept]);
+	let pipe = pipeNormalizer([normalizeFullStringFormat, normalizeEntryField, normalizeOutput, normalizeConcept,normalizeProperty]);
 	let entries = 
 			Array.isArray(dictionary)?dictionary:
 			Array.isArray(dictionary.entries)?dictionary.entries : [];
