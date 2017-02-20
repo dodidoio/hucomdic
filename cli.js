@@ -3,7 +3,7 @@
 const colors = require('colors');
 const fs = require('fs-extra');
 const server = require('dodido-client');
-
+const showLogs = require('./show-logs');
 const DEFAULTSERVER = "wss://assist.dodido.io";
 var config = null;
 var args = require('minimist')(process.argv.slice(2),{alias:{help:'h',dir:'d',file:'f',init:'i',server:'s',all:'a'}});
@@ -11,6 +11,7 @@ var args = require('minimist')(process.argv.slice(2),{alias:{help:'h',dir:'d',fi
 if(args.help){
 	console.info('Usage: $hucomdic {OPTIONS}');
 	console.info('\tinit,-i\tInitialize a new environment. This should be called for first time use.');
+	console.info('\tlogs,-i\tshow log files');
 	console.info('\t--help\tShow this message');
 	console.info('\t--dir,-d\tSpecify the directory to upload');
 	console.info('\t--file,-f\tSpecify the file to upload');
@@ -25,8 +26,10 @@ const configFile = ".dodido.json";
 
 if(args._[0] === 'init'){
 	init();
+}else if(args._[0] === 'logs'){
+	connect().then(()=>showLogs(server,args)).then(()=>process.exit(0)).catch(errorHandler);
 }else{
-	connect();
+	connect().then(upload);
 }
 
 function connect(){
@@ -41,7 +44,7 @@ function connect(){
 		console.error("There is an error in the .dodido.json config file. Use 'hucomdic init' to recreate the config file".red.bold);
 		process.exit(1);
 	}
-	server.connect(args.server||config.server || DEFAULTSERVER,config.token).then(upload);
+	return server.connect(args.server||config.server || DEFAULTSERVER,config.token);
 }
 
 function init(){
@@ -93,7 +96,11 @@ function upload(){
 			require('.').uploadAll(syncDir,since);
 		}
 	}catch(err){
-		console.error("An error occured while uploading files - " + err);
-		process.exit(-1);
+		errorHandler("An error occured while uploading files - " + err);
 	}
+}
+
+function errorHandler(err){
+	console.error(err);
+	process.exit(-1);
 }

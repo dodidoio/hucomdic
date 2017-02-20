@@ -4,6 +4,7 @@ const server = require('dodido-client');
 const readline = require('readline');
 const colors = require('colors');
 const normalizeDictionary = require('./normalize-dictionary');
+const walk = require('klaw');
 
 var processing = 0;
 var errorCount = 0;
@@ -142,7 +143,7 @@ function uploadList(files){
 
 function uploadAll(dir,since){
 	since = since || 0;
-	fs.walk(dir)
+	walk(dir)
 		.on('data', (item)=> {
 			if(!item.stats.isDirectory() && item.stats.mtime > since){
 				upload(item.path);
