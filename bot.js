@@ -141,7 +141,11 @@ function processText(text,type){
 					answer = lastQuestion.options[parseInt(text)-1];
 				}
 				//after getting an answer, send the answer to the server with question id and expected type
-				client.answer(lastQuestion.id,answer,lastQuestion.expecting).on('error',(err)=>{
+				client.answer(lastQuestion.id,{
+					input:answer,
+					expecting: lastQuestion.expecting,
+					packages: config.bot.packages.join(',')
+				},lastQuestion.expecting,context).on('error',(err)=>{
 					showError(err);
 				}).on('fail',()=>{
 					//handle event where server could not understand the user request

@@ -108,6 +108,12 @@ function showTable(obj){
 function as(obj,from,to){
 	switch(from + '|' + to){
 		case 'entity-summary|text':
+			if(obj === null){
+				return 'NULL';
+			}
+			if(typeof obj !== 'object'){
+				return obj.toString();
+			}
 			return obj.name || obj.title || obj.description || obj.content ||  obj.link;
 		default:
 			return null;
@@ -117,8 +123,6 @@ function as(obj,from,to){
 function asText(obj){
 	if(obj === null || obj === undefined){
 		return "";
-	}else if(!isNaN(Date.parse(obj))){
-		return new Date(obj).toLocaleString();
 	}else if(typeof obj === 'object'){
 		let text = JSON.stringify(obj);
 		if(text.length > MAX_OBJECT_TEXT){
@@ -168,6 +172,9 @@ function saveFile(filename,buf,dir,counter){
 }
 
 function showEntityProperties(entity){
+	if(!entity || !Array.isArray(entity.properties)){
+		return false;
+	}
 	let rows = entity.properties.map((elem)=>elem.value !== undefined?[elem.name,asText(elem.value)] : null);
 	let table = new Table({
 		colWidths : calculateColWidths(rows),

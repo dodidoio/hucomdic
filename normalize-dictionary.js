@@ -185,6 +185,7 @@ function normalizeEntryField(writer,entry){
 
 function normalizeConcept(writer,entry){
 	if(entry.entry === 'concept'){
+		entry.plural = typeof entry.name === 'string'? pluralize.plural(entry.name) : undefined;
 		(entry.properties||[]).forEach((prop)=>{
 			if(typeof prop === 'string'){
 				//we are using here the shorthand text format - parse it
