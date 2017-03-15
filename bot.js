@@ -90,6 +90,20 @@ var commands = {
 		//show active context by calling the dumpContext function
 		processText('dumpContext@dodido/interact','call');
 	},
+	key : function(text){
+		let split = text.match(/^(\S*)\s+(.*)$/);
+		if(!split){
+			showError('The format of the key directive is: .key {key name} {key value}');
+			return;
+		}
+		if(!config.bot.keys || typeof config.bot.keys !== 'object'){
+			config.bot.keys = {};
+			context.keys = config.bot.keys;
+		}
+		config.bot.keys[split[1]] = split[2];
+		saveConfig();
+		
+	},
 	whoami : function(){
 		//show the name of the user
 		client.whoami().on('error',(err)=>{
@@ -110,6 +124,7 @@ function showCommandLineHelp(){
 	console.info('    .call {function} - call a function within a package - function is written in the format "functionName@owner/package bindingArguments?" as used in the bind property of dictionary entries');
 	console.info('    .config - show bot configuration object');
 	console.info('    .whoami - show user name');
+	console.info('    .key {key name} {key value} - add a key to the context keys');
 }
 
 /**
@@ -169,10 +184,12 @@ function processText(text,type){
 			showReceive(text);
 			activeRequest.interact = true;
 		});
-	newRequest.on('error',(err)=>{
+	newRequest.on('error',(friendly,techie)=>{
 			//handle error event
 			activeRequest.interact = true;
-			showError(err);
+			showError(friendly);
+			if(techie)
+				showLog(techie);
 		});
 	newRequest.on('log',(log)=>{
 			showLog(log);
@@ -242,6 +259,9 @@ function main(){
 	//connect to server
 	context.token = config.token; //set the request token
 	context.userid = config.userid || null; //set the request context userid
+	if(config.bot.keys){
+		context.keys = config.bot.keys;
+	}
 	client.connect(config.server || DEFAULTSERVER,config.token).then(()=>{
 		showLog("Connected to server - write your request and then click <Enter>");
 		const readline = require('readline');
