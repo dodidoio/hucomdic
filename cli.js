@@ -4,21 +4,10 @@ const colors = require('colors');
 const fs = require('fs-extra');
 const server = require('dodido-client');
 const walk = require('klaw');
-
+const showLogs = require('./show-logs');
 const DEFAULTSERVER = "wss://assist.dodido.io";
 var config = null;
 var args = require('minimist')(process.argv.slice(2),{alias:{help:'h',dir:'d',file:'f',init:'i',server:'s',all:'a'}});
-
-if(args.help){
-	console.info('Usage: $hucomdic {OPTIONS}');
-	console.info('\tinit,-i\tInitialize a new environment. This should be called for first time use.');
-	console.info('\t--help\tShow this message');
-	console.info('\t--dir,-d\tSpecify the directory to upload');
-	console.info('\t--file,-f\tSpecify the file to upload');
-	console.info('\t--all,-a\tUpload all files - default is upload only files changed since last upload');
-	console.info("First time use: call '$hucomdic init' to initialize the environment for use with the human-computer dictionary. This command will create a .dodido.json file in the current working dir");
-	process.exit(0);
-}
 
 const syncDir = require('path').resolve(args.dir || process.cwd());
 process.chdir(syncDir);
@@ -26,8 +15,10 @@ const configFile = ".dodido.json";
 
 if(args._[0] === 'init'){
 	init();
+}else if(args._[0] === 'logs'){
+	connect().then(()=>showLogs(server,args));
 }else{
-	connect();
+	connect().then(upload);
 }
 
 function connect(){
@@ -42,7 +33,7 @@ function connect(){
 		console.error("There is an error in the .dodido.json config file. Use 'hucomdic init' to recreate the config file".red.bold);
 		process.exit(1);
 	}
-	server.connect(args.server||config.server || DEFAULTSERVER,config.token).then(upload);
+	return server.connect(args.server||config.server || DEFAULTSERVER,config.token);
 }
 
 function init(){
@@ -75,6 +66,16 @@ function init(){
 }
 
 function upload(){
+	if(args.help){
+		console.info('Usage: $hucomdic {OPTIONS}');
+		console.info('\tinit,-i\tInitialize a new environment. This should be called for first time use.');
+		console.info('\t--help\tShow this message');
+		console.info('\t--dir,-d\tSpecify the directory to upload');
+		console.info('\t--file,-f\tSpecify the file to upload');
+		console.info('\t--all,-a\tUpload all files - default is upload only files changed since last upload');
+		console.info("First time use: call '$hucomdic init' to initialize the environment for use with the human-computer dictionary. This command will create a .dodido.json file in the current working dir");
+		process.exit(0);
+	}
 	if(args.file && !Array.isArray(args.file)){
 		//make sur args.file is an array
 		args.file = [args.file];
