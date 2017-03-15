@@ -24,7 +24,10 @@ module.exports = function(obj,type,config){
 			console.info(obj.cyan);
 			return true;
 		case 'error':
-			console.info(obj.red.bold);
+			if(typeof obj === 'string')
+				console.info(obj.red.bold);
+			else
+				console.info(`Got error: ${JSON.stringify(obj)}`.red.bold);
 			return true;
 		case 'receive':
 			console.info(obj.cyan);
