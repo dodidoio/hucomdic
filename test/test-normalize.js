@@ -6,7 +6,6 @@ let output = require('../normalize-dictionary')(input);
 
 tap.test('testing dictionary normalizer',function(t){
 	output = JSON.parse(JSON.stringify(output));
-	console.log('-------------------------------------------------');
 	for(let i=0;i<target.length;++i){
 		t.same(output[i],target[i]);
 	}

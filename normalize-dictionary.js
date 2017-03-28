@@ -2,6 +2,10 @@
 const pluralize = require('pluralize');
 const DEFAULT_TYPE = 'action';
 
+function error(message,entry){
+	return {message:message,entry:entry};
+}
+
 function pipeNormalizer(first,second){
 	if(!second || second.length === 0){
 		return Array.isArray(first)?pipeNormalizer(first[0],first.slice(1)) : first;
@@ -127,18 +131,10 @@ function normalizeMe(writer,entry){
 	}
 }
 
-function normalizeFullStringFormat(writer,entry){
-	if(typeof entry !== 'string'){
-		writer(entry);
-		return;
-	}
-	if(entry.match(/^\-\-/)){
-		//this is a remark - do nothing
-			return;
-	}
-	const match = entry.match(/^(.*?)(?:\((.*?)\))?(?:(=>>|=>)(.+?))?(?:\/\/(.*))?$/);
+function parseStringFormat(text){
+	const match = text.match(/^(.*?)(?:\((.*?)\))?(?:(=>>|=>)(.+?))?(?:\/\/(.*))?$/);
 	if(match){
-		let generated = {entry:'pattern'};
+		let generated = {};
 		generated.pattern = match[1];
 		generated.type = match[2] || DEFAULT_TYPE;
 		if(match[3]=='=>'){
@@ -149,7 +145,27 @@ function normalizeFullStringFormat(writer,entry){
 			generated.bind = `text@dodido/pojo ${JSON.stringify(outputFromPattern(match[1]))}`;
 		}
 		generated.description = match[5];
-		writer(generated);
+		return generated;
+	}else{
+		return null;
+	}
+}
+
+function normalizeFullStringFormat(writer,entry){
+	if(typeof entry !== 'string'){
+		writer(entry);
+		return;
+	}
+	if(entry.match(/^\-\-/)){
+		//this is a remark - do nothing
+			return;
+	}
+	let parsed = parseStringFormat(entry);
+	if(parsed){
+		parsed.entry = 'pattern';
+		writer(parsed);
+	}else{
+		throw error("Cannot parse the string entry",entry);
 	}
 }
 
@@ -185,7 +201,16 @@ function normalizeEntryField(writer,entry){
 
 function normalizeConcept(writer,entry){
 	if(entry.entry === 'concept'){
+		if(typeof entry.name !== 'string'){
+			if(entry.type){
+				entry.name = entry.type;
+			}else{
+				throw error('Concept entry must have a name',entry);
+			}
+		}
 		entry.plural = typeof entry.name === 'string'? pluralize.plural(entry.name) : undefined;
+		
+		//process properties
 		(entry.properties||[]).forEach((prop)=>{
 			if(typeof prop === 'string'){
 				//we are using here the shorthand text format - parse it
@@ -194,10 +219,127 @@ function normalizeConcept(writer,entry){
 			}
 			prop.entry = 'property';
 			prop.$container = "concept:" + (entry.name||entry.type);
+			prop._contained = true;
 			normalizeProperty(writer,prop);
 		});
+		
+		//process traits
+		(entry.traits||entry.trait || []).forEach((trait)=>{
+			let generated = null;
+			if(typeof trait === 'string'){
+				generated = parseStringFormat(trait);
+				if(!generated){
+					throw error("Cannot parse trait in concept" + entry.name,trait);
+				}
+			}else{
+				generated = trait;
+			}
+			generated.entry = 'trait';
+			generated.$container = 'concept:' + entry.name;
+			generated._contained = true;
+			delete generated.type;
+			writer(generated);
+		});
+		
+		//process creators
+		(entry.creators||entry.creator || []).forEach((creator)=>{
+			let generated = null;
+			if(typeof creator === 'string'){
+				generated = parseStringFormat(creator);
+				if(!generated){
+					throw error("Cannot parse cerator in concept" + entry.name,creator);
+				}
+				generated.pattern = generated.pattern + "=>" + generated.bind;
+				delete generated.bind;
+			}else{
+				generated = creator;
+			}
+			generated._contained = true;
+			generated.entry = 'creator';
+			generated.$container = 'concept:' + entry.name;
+			writer(generated);
+		});
+
 		entry.name = entry.name || entry.type;
 		entry.type = entry.type || entry.name;
+	}
+	writer(entry);
+}
+
+/**
+ * add a name to the entry based on the pattern. This is active for connectors and traits
+ * it is helpful for debug situations
+ * @param {[[Type]]} writer [[Description]]
+ * @param {[[Type]]} entry  [[Description]]
+ */
+function normalizeNames(writer,entry){
+	if(!entry.name){
+		if(entry.entry === 'connector'||entry.entry === 'is connector'){
+			if(typeof entry.$container !== 'string'){
+				throw error('Connectors must have $container property',entry);
+			}
+			let matched = entry.$container.match(/^concept\:(.+)$/);
+			if(!matched){
+				throw error("Connectors must have concept containers",entry);
+			}
+			entry.name = `the ${matched[1]} ${entry.pattern} the ${entry.property}`;
+		}
+		if(entry.entry === 'trait'||entry.entry === 'is trait'){
+			if(typeof entry.$container !== 'string'){
+				throw error('traits must have $container property',entry);
+			}
+			let matched = entry.$container.match(/^concept\:(.+)$/);
+			if(!matched){
+				throw error("traits must have concept containers",entry);
+			}
+			entry.name = entry.pattern.replace(/\[([a-zA-Z0-9\s\-]+)\]/g,"a $1");
+		}
+	}
+	writer(entry);
+}
+	
+function normalizeTrait(writer,entry){
+	if(entry.entry==='trait'){
+		if(typeof entry.pattern !== 'string'){
+			throw error("Trait entry must have a pattern property",entry);
+		}
+		
+		let matched = entry.pattern.match(/^([a-z]+)\s+(.+)$/);
+		if(!matched){
+			throw error("There was a problem with the trait pattern",entry);
+		}
+		if(matched[1]==='is'){
+			//this is an is trait
+			entry.entry = 'is trait';
+			entry.pattern = matched[2];
+		}else{
+			//add plural pattern
+			let newTrait = {};
+			Object.assign(newTrait,entry);
+			newTrait.pattern = `${pluralize.plural(matched[1])} ${matched[2]}`;
+			if(newTrait.name){
+				newTrait.name = newTrait.name + '*';
+			}
+			writer(newTrait);
+		}
+	}
+	writer(entry);
+}
+
+function normalizeConnector(writer,entry){
+	if(entry.entry==='connector'){
+		if(typeof entry.pattern !== 'string'){
+			throw error("Connector entry must have a pattern property",entry);
+		}
+		let matched = entry.pattern.match(/^([a-z]+)\s+(.+)$/);
+		if(!matched){
+			throw error("There was a problem with the connector pattern",entry);
+		}
+		if(matched[1]==='is'){
+			//this is an is connector
+			entry.entry = 'is connector';
+			entry.pattern = matched[2];
+		}
 	}
 	writer(entry);
 }
@@ -217,31 +359,76 @@ function normalizeProperty(writer,entry){
 		}else{
 			entry['property type'] = 'property';
 		}
+		
+		//generate connectors
+		let connectors = entry.connector||entry.connectors || [];
+		if(!Array.isArray(connectors)){
+			connectors = [connectors];
+		}
+		connectors.forEach((connector)=>writer({
+				entry:'connector',
+				$container:entry.$container,
+				pattern:connector,
+				property:entry.name,
+				_contained : true,
+				type:entry.type
+			}));
 	}
 	writer(entry);
 }
+
 
 function logger(writer,entry){
 	console.info('ENTRY',JSON.stringify(entry));
 	writer(entry);
 }
 
-module.exports = function(dictionary){
-	let pipe = pipeNormalizer([normalizeFullStringFormat, normalizeEntryField, normalizeOutput, normalizeConcept,normalizeProperty]);
+/**
+ * Normalize a dictionary json construct. If the dictionary is an array of entries, each entry is normalized
+ * in sequence. If it is an object, its entries property is assumed to contain an array of entries
+ * @param   {object}   dictionary   an array of entries or an object with property entries containing 
+ *                                an array of entries
+ * @param   {Function} errorHandler an optional handler of errors in the form of handler(entry,message)
+ * @param   {string}   config processing configuration. display - used to display entries - hiding entries that are generated as hacks to improve parsing performance and accuracy
+ * @returns {object}   a dictionary object with an entries property containing normalized entries
+ */
+module.exports = function(dictionary,errorHandler,config){
+	let pipe = pipeNormalizer([normalizeFullStringFormat, normalizeEntryField, normalizeOutput, normalizeConcept,normalizeProperty,normalizeNames,normalizeTrait,normalizeConnector]);
+	if(config === 'display'){
+		pipe = pipeNormalizer([normalizeFullStringFormat, normalizeEntryField, normalizeOutput, normalizeConcept,normalizeProperty]);
+	}
 	let entries = 
 			Array.isArray(dictionary)?dictionary:
 			Array.isArray(dictionary.entries)?dictionary.entries : [];
 	let output = [];
 	entries.forEach((entry)=>{
 		try{
-			pipe((e)=>output.push(e),entry);
+			pipe((e)=>output.push(e),copy(entry));
 		}catch(e){
-			console.error("Error processing entry:",JSON.stringify(entry),"==>",e);
+			let errMessage = e.message || e.toString();
+			let errEntry = e.entry || entry;
+			if(typeof errorHandler === 'function'){
+				errorHandler(errEntry,errMessage);
+			}else{
+				console.error("Error processing entry:",JSON.stringify(errEntry),"==>",errMessage);
+			}
 		}});
 	if(Array.isArray(dictionary)){
 		return {entries:output};
 	}else{
-		dictionary.entries = output;
-		return dictionary;
+		let ret = {};
+		Object.assign(ret,dictionary);
+		ret.entries = output;
+		return ret;
 	}
 };
+
+function copy(x){
+	if(typeof x !== 'object'){
+		return x;
+	}else{
+		let ret = {};
+		Object.assign(ret,x);
+		return ret;
+	}
+}

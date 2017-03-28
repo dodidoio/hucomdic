@@ -30,7 +30,7 @@ function message(text){
 }
 function log(text){
 	readline.clearLine(process.stdout);
-	console.log(text);
+	console.info(text);
 }
 
 function uploadManifest(path){
@@ -43,14 +43,22 @@ function uploadManifest(path){
 		return;
 	}
 	if(!manifest){
-		error("Could not open manifest " + id);
+		error("Could not open file " + id);
 		return;
 	}
 	processing++;
 	fileCount++;
 	var errorMessage = null;
 	if(path.match(/\.dic$/)){
-		manifest = normalizeDictionary(manifest);
+		//calling normalize-dictionary to show any existing errors
+		let hasError = false;
+		normalizeDictionary(
+			manifest,
+			(entry,message)=>{
+				if(!errorMessage)
+					errorMessage = `dictionary file format error: ${message} in ${JSON.stringify(entry)}`;
+			}
+		);
 	}
 	server.saveManifest(id,manifest).on('error',function(err){
 		errorMessage = err;
@@ -59,12 +67,12 @@ function uploadManifest(path){
 			return Promise.reject(errorMessage);
 		}
 		processing--;
-		message("Uploaded manifest " + id);
+		message("Uploaded file " + id);
 		if(processing === 0){
 			exit();
 		}
 	}).catch((err)=>{
-		error(`Error uploading manifest ${id} - ${err}`);
+		error(`Error uploading file '${id}' - ${err}`);
 		processing--;
 		if(processing === 0){
 			exit();
@@ -104,7 +112,7 @@ function uploadFile(path){
 			exit();
 		}
 	}).catch((err)=>{
-		error(`Error uploading file ${id} - ${err}`);
+		error(`Error uploading file '${id}' - ${err}`);
 		processing--;
 		if(processing === 0){
 			exit();

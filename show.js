@@ -196,7 +196,6 @@ function showGrouping(entity,config){
 	const all = entity.groups.map((elem)=>Object.keys(elem.aggregate));
 	const columns = _.union.apply(this,all);
 	const rows = entity.groups.map((group)=>[group.title].concat(columns.map((col)=>group.aggregate[col] || '')));
-	//console.log('rows\n',rows.join('\n'));
 	let table = new Table({
 		colWidths : calculateColWidths(rows),
 		head: ['Group'].concat(columns),
