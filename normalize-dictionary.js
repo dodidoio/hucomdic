@@ -377,10 +377,50 @@ function normalizeProperty(writer,entry){
 	writer(entry);
 }
 
+/**
+ * Turn property options into entities
+ * @param {[[Type]]} writer [[Description]]
+ * @param {object}   entry  [[Description]]
+ */
+function normalizePropertyOptions(writer,entry){
+	if(entry.entry === 'property'){
+		if(entry.options){
+			//if there is not entry type, generate a type as random string
+			if(!entry.type){
+				entry.type = 't' + Math.random().toString(36).substr(2);
+			}
+			if(!Array.isArray(entry.options)){
+				entry.options = [entry.options];
+			}
+			entry.options.forEach((option)=>{
+				writer({
+					entry:'pattern',
+					pattern:option,
+					type:entry.type,
+					output:JSON.stringify(option)
+				});
+			});
+		}
+	}
+	writer(entry);
+}
+
+
 
 function logger(writer,entry){
 	console.info('ENTRY',JSON.stringify(entry));
 	writer(entry);
+}
+
+
+function copy(x){
+	if(typeof x !== 'object'){
+		return x;
+	}else{
+		let ret = {};
+		Object.assign(ret,x);
+		return ret;
+	}
 }
 
 /**
@@ -393,7 +433,7 @@ function logger(writer,entry){
  * @returns {object}   a dictionary object with an entries property containing normalized entries
  */
 module.exports = function(dictionary,errorHandler,config){
-	let pipe = pipeNormalizer([normalizeFullStringFormat, normalizeEntryField, normalizeOutput, normalizeConcept,normalizeProperty,normalizeNames,normalizeTrait,normalizeConnector]);
+	let pipe = pipeNormalizer([normalizeFullStringFormat, normalizeEntryField, normalizeOutput, normalizeConcept, normalizeProperty, normalizePropertyOptions, normalizeNames, normalizeTrait, normalizeConnector]);
 	if(config === 'display'){
 		pipe = pipeNormalizer([normalizeFullStringFormat, normalizeEntryField, normalizeOutput, normalizeConcept,normalizeProperty]);
 	}
@@ -422,13 +462,3 @@ module.exports = function(dictionary,errorHandler,config){
 		return ret;
 	}
 };
-
-function copy(x){
-	if(typeof x !== 'object'){
-		return x;
-	}else{
-		let ret = {};
-		Object.assign(ret,x);
-		return ret;
-	}
-}
