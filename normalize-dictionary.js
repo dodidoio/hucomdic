@@ -251,6 +251,7 @@ function normalizeConcept(writer,entry){
 				}
 				generated.pattern = generated.pattern + "=>" + generated.bind;
 				delete generated.bind;
+				delete generated.type;
 			}else{
 				generated = creator;
 			}
