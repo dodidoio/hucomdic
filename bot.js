@@ -159,7 +159,8 @@ function processText(text,type){
 				client.answer(lastQuestion.id,{
 					input:answer,
 					expecting: lastQuestion.expecting,
-					packages: config.bot.packages.join(',')
+					packages: config.bot.packages.join(','),
+					userid:context.userid,
 				},lastQuestion.expecting,context).on('error',(err)=>{
 					showError(err);
 				}).on('fail',()=>{
