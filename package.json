@@ -1,6 +1,6 @@
 {
   "name": "hucomdic",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "The human-computer dictionary is a service that translates natural language requests into programming language. This package contains a command like application for uploading dictionary files to the hucomdic.org server, a command line bot for using the dictionary and some additional library for parsing intermediate format (nnt).",
   "main": "index.js",
   "bin": {
