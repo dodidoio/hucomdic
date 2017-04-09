@@ -208,7 +208,7 @@ function processText(text,type){
 			lastQuestion = {
 				message:message,
 				options:Array.isArray(expecting)?expecting:null,
-				expecting:Array.isArray(expecting)?text:expecting,
+				expecting:Array.isArray(expecting)?'text':expecting,
 				id:id
 			};
 			show(lastQuestion,'question',config.bot);
