@@ -1,6 +1,6 @@
 {
   "name": "hucomdic",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "The human-computer dictionary is a service that translates natural language requests into programming language. This package contains a command like application for uploading dictionary files to the hucomdic.org server, a command line bot for using the dictionary and some additional library for parsing intermediate format (nnt).",
   "main": "index.js",
   "bin": {
@@ -12,9 +12,10 @@
     "colors": "^1.1.2",
     "dodido-client": "^0.1.4",
     "fs-extra": "^2.0.0",
+    "json-yaml": "^0.1.0",
+    "klaw": "^1.3.1",
     "minimist": "^1.2.0",
     "pegjs": "^0.10.0",
-		"klaw":"^1.3.1",
     "pluralize": "^3.1.0",
     "uuid": "^3.0.1"
   },
@@ -33,8 +34,8 @@
   "keywords": [
     "human-computer-dictionary",
     "hucomdic",
-		"bot",
-		"chatbot"
+    "bot",
+    "chatbot"
   ],
   "author": "Elchanan Shor",
   "license": "MPL-2.0",

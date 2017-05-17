@@ -1,4 +1,5 @@
 const fs = require('fs-extra');
+const jsonYaml = require('json-yaml');
 const pathLib = require('path');
 const server = require('dodido-client');
 const readline = require('readline');
@@ -37,7 +38,8 @@ function uploadManifest(path){
 	const id = pathLib.relative(process.cwd(),path).replace(/\\/g,'/');
 	var manifest = null;
 	try{
-		manifest = fs.readJsonSync(path);
+		//manifest = fs.readJsonSync(path);
+		manifest = loadFile(path);
 	}catch(e){
 		error(`Error loading file ${path} - ${e}`);
 		return;
@@ -176,3 +178,12 @@ module.exports = {
 	uploadList : uploadList,
 	connect : connect
 };
+
+function loadFile(path){
+	try{
+		return jsonYaml.readFileSync(path, 'utf-8');
+	}catch(e){
+		return fs.readJsonSync(path);
+	}
+}
+
