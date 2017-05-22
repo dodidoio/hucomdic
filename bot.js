@@ -160,6 +160,7 @@ function processText(text,type){
 					input:answer,
 					expecting: lastQuestion.expecting,
 					packages: config.bot.packages.join(','),
+					user : config.bot.user,
 					userid:context.userid,
 				},lastQuestion.expecting,context).on('error',(err)=>{
 					showError(err);
@@ -184,6 +185,23 @@ function processText(text,type){
 			//handle say event
 			showReceive(text);
 			activeRequest.interact = true;
+		});
+		newRequest.on('config',(name,value)=>{
+			if(!config.bot.user.configuration){
+				config.bot.user.configuration = [];
+			}
+			let configuration = config.bot.user.configuration;
+			
+			//search for the required configuration
+			for(let i=0;i<configuration.length;++i){
+				if(configuration[i].name === name){
+					configuration[i].value = value;
+					saveConfig();
+					return;
+				}
+			}
+			configuration.push({name:name,value:value});
+			saveConfig();
 		});
 	newRequest.on('error',(friendly,techie)=>{
 			//handle error event
@@ -247,6 +265,7 @@ function main(){
 		config.bot = {
 			packages:[],//packages the bot should use
 			cid:require('uuid').v4(),//conversation id - generate a new id for a new conversation
+			configuration:[],
 			download:'download'};//directory used for downloaded files
 		saveConfig();
 	}
@@ -263,6 +282,11 @@ function main(){
 	if(config.bot.keys){
 		context.keys = config.bot.keys;
 	}
+	if(!config.bot.user){
+		config.bot.user = {};
+		saveConfig();
+	}
+	context.user = config.bot.user;
 	client.connect(config.server || DEFAULTSERVER,config.token).then(()=>{
 		showLog("Connected to server - write your request and then click <Enter>");
 		const readline = require('readline');
