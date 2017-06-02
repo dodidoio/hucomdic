@@ -334,7 +334,7 @@ function normalizeConnector(writer,entry){
 		}
 		let matched = entry.pattern.match(/^([a-z]+)\s+(.+)$/);
 		if(!matched){
-			throw error("There was a problem with the connector pattern",entry);
+			throw error("There was a problem with the connector pattern. Does the connector have the connector verb (like 'is')?",entry);
 		}
 		if(matched[1]==='is'){
 			//this is an is connector
