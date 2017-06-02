@@ -155,6 +155,18 @@ function processText(text,type){
 				if(lastQuestion.options && !Number.isNaN(parseInt(text)) && parseInt(text) <=lastQuestion.expecting.length && parseInt(text) > 0){
 					answer = lastQuestion.options[parseInt(text)-1];
 				}
+				//if expecting a file then get the file
+				if(lastQuestion.expecting === 'file'){
+					let content = readFileSyncSafe(answer,{encoding:'utf8'});
+					if(!content){
+						showError('Could not load the file "'+answer+'". Try again.');
+						return;
+					}
+					answer = {
+						filename:require('path').basename(text),
+						data:Buffer.from(content).toString('base64')
+					};
+				}
 				//after getting an answer, send the answer to the server with question id and expected type
 				client.answer(lastQuestion.id,{
 					input:answer,
