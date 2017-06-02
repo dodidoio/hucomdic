@@ -7,6 +7,7 @@ const colors = require('colors');
 const client = require('dodido-client');
 const show = require('./show');
 const context = {};//the context to pass to all requests - it contains token and userid
+const crypto = require('crypto');
 var config = null;
 var configFile = null;
 var rl = null;
@@ -198,9 +199,12 @@ function processText(text,type){
 			showReceive(text);
 			activeRequest.interact = true;
 		});
-		newRequest.on('config',(name,value)=>{
+		newRequest.on('config',(name,value,encrypt)=>{
 			if(!config.bot.user.configuration){
 				config.bot.user.configuration = [];
+			}
+			if(!config.bot.user.secret){
+				config.bot.user.secret = crypto.randomBytes(256).toString('base64');
 			}
 			let configuration = config.bot.user.configuration;
 			
@@ -330,4 +334,13 @@ function main(){
 		process.exit(1);
 	});
 }
+
+function readFileSyncSafe(file,opts){
+	try{
+		return fs.readFileSync(file,opts);
+	}catch(e){
+		return null;
+	}
+}
+
 main();
