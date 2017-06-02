@@ -188,7 +188,6 @@ function showEntityProperties(entity){
 		console.info('No information to show');
 		return true;
 	}else{
-		console.log('ROWS',rows);
 	}
 	let table = new Table({
 		colWidths : calculateColWidths(rows),
