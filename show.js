@@ -64,7 +64,8 @@ function showList(obj){
 function calculateColWidths(rows){
 	var ret = [];
 	for(let i=0;i<rows.length;++i){
-		for(let j=0;j<rows[i].length;++j){
+		let length = Array.isArray(rows[i])? rows[i].length : 0;
+		for(let j=0;j<length;++j){
 			let cell = asText(rows[i][j]);
 			ret[j] = Math.max(ret[j] || 0,cell.length + CELL_PADDING);
 		}
@@ -97,6 +98,10 @@ function calculateColWidths(rows){
 }
 
 function showTable(obj){
+	if(!Array.isArray(obj.rows) || obj.rows.length === 0){
+		console.info('No information to show');
+		return true;
+	}
 	let table = new Table({
 		colWidths : [7].concat(calculateColWidths(obj.rows)),
 		head : [""].concat(obj.columns),
@@ -179,6 +184,12 @@ function showEntityProperties(entity){
 		return false;
 	}
 	let rows = entity.properties.map((elem)=>elem.value !== undefined?[elem.name,asText(elem.value)] : null);
+	if(!Array.isArray(rows) || rows.length ===0){
+		console.info('No information to show');
+		return true;
+	}else{
+		console.log('ROWS',rows);
+	}
 	let table = new Table({
 		colWidths : calculateColWidths(rows),
 		style : {compact:true}});
@@ -207,7 +218,7 @@ function showGrouping(entity,config){
 	return true;
 }
 function showQuestion(obj){
-	console.info(obj.message + (obj.message.match(/\?$/)? "" : "?"));
+	console.info(obj.message + (obj.expecting !=='text'? (' ('+obj.expecting + ')') : ''));
 	if(obj.options){
 		obj.options.forEach((elem,index)=>{console.info(`${index+1}. ${elem}`);});
 	}
