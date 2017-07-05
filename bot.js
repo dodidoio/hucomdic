@@ -263,6 +263,7 @@ function main(){
 		console.info('    --help\tShow this message');
 		console.info('    --dir,-d\tSpecify the directory to upload');
 		console.info('    --new,-n\tStart a new session - erase history from previous session');
+		console.info('    --server {server_url},-n\tspecify server to connect to - overrides config file');
 		console.info('    --clear,-c\tStart a new context but don\'t erase other information');
 		showCommandLineHelp();
 		process.exit(0);

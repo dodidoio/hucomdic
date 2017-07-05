@@ -6,7 +6,7 @@ const readline = require('readline');
 const colors = require('colors');
 const normalizeDictionary = require('./normalize-dictionary');
 const walk = require('klaw');
-
+const config = require('./config');
 var processing = 0;
 var errorCount = 0;
 var ignoreCount = 0;
@@ -123,22 +123,12 @@ function uploadFile(path){
 }
 
 function upload(path){
-	const match = path.match(/\.([a-zA-Z0-9\-_]+)$/);
-	const ext = match? match[1] : null;
-	switch(ext){
-		case 'dic':
-		case 'bot':
-		case 'hook':
-			uploadManifest(path);
-			break;
-		case 'js':
-		case 'json':
-			if(pathLib.parse(path).base !== '.dodido.json'){//ignore .dodido.json file
-				uploadFile(path);
-			}
-			break;
-		default:
-			ignoreCount++;
+	if(isManifest(path)){
+		uploadManifest(path);
+	}else{
+		if(pathLib.parse(path).base !== '.dodido.json'){//ignore .dodido.json file
+			uploadFile(path);
+		}
 	}
 }
 
@@ -187,3 +177,13 @@ function loadFile(path){
 	}
 }
 
+function isManifest(path){
+	const match = path.match(/\.([a-zA-Z0-9\-_]+)$/);
+	const ext = match? match[1] : null;
+	return config.manifestExtensions.includes(ext);
+}
+function isFile(path){
+	const match = path.match(/\.([a-zA-Z0-9\-_]+)$/);
+	const ext = match? match[1] : null;
+	return config.fileExtensions.includes(ext);
+}
