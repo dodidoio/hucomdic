@@ -8,6 +8,7 @@ const client = require('dodido-client');
 const show = require('./show');
 const context = {};//the context to pass to all requests - it contains token and userid
 const crypto = require('crypto');
+const textExpand = require('./text-expand');
 var config = null;
 var configFile = null;
 var rl = null;
@@ -149,6 +150,8 @@ function processText(text,type){
 			isParsed = true;
 			break;
 		default:
+			text = textExpand.get(text) || text;
+			textExpand.reset();
 			if(lastQuestion){
 				//we are waiting for an answer
 				//if expecting is an array then get the answer with the relevant number
