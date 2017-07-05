@@ -4,7 +4,11 @@ const colors = require('colors');
 const Table = require('cli-table2');
 const fs = require('fs');
 const path = require('path');
+const textExpand = require('./text-expand');
 const _ = require('underscore');
+const os = require('os');
+const child_process = require('child_process');
+
 const MAX_TABLE_LENGTH = 120;
 const MAX_OBJECT_TEXT = 200;
 const CELL_PADDING = 2;
@@ -23,6 +27,8 @@ module.exports = function(obj,type,config){
 		case 'text':
 			console.info(obj.cyan);
 			return true;
+		case 'message':
+			return showMessage(obj);
 		case 'error':
 			if(typeof obj === 'string')
 				console.info(obj.red.bold);
@@ -47,6 +53,8 @@ module.exports = function(obj,type,config){
 			return showFile(obj,config);
 		case 'question':
 			return showQuestion(obj);
+		case 'webview':
+			return showWebview(obj);
 		default:
 			return false;
 	}
@@ -222,4 +230,41 @@ function showQuestion(obj){
 		obj.options.forEach((elem,index)=>{console.info(`${index+1}. ${elem}`);});
 	}
 	return true;
+}
+
+function showMessage(message){
+	let text = [];
+	//show message
+	if(typeof message.content === 'string'){
+		console.info(message.content);
+	}
+	
+	//show actions
+	(message.actions||[]).forEach((actionObject,pos)=>{
+		let action,title;
+		if(typeof actionObject === 'string'){
+			let matched = actionObject.match(/^(.*)\:(.*)$/);
+			if(matched){
+				title = matched[1].trim();
+				action = matched[2].trim();
+			}else{
+				title = action = actionObject.trim();
+			}
+		}else{
+			action = actionObject.action;
+			title = actionObject.title;
+		}
+		text.push(`[${pos+1}] ${title}`);
+		textExpand.store(pos+1,action);
+	});
+	console.info(text.join(','));
+	return true;
+}
+
+function showWebview(html){
+	let dir = os.tmpdir();
+	let name = "webview-"+Date.now()+'.html';
+	let path = dir + '/' + name;
+	fs.writeFileSync(path,html,{flag:'wx'});
+	child_process.exec('xdg-open '+path);
 }
