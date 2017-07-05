@@ -303,7 +303,7 @@ function main(){
 		saveConfig();
 	}
 	context.user = config.bot.user;
-	client.connect(config.server || DEFAULTSERVER,config.token).then(()=>{
+	client.connect(args.server || config.server || DEFAULTSERVER,config.token).then(()=>{
 		showLog("Connected to server - write your request and then click <Enter>");
 		const readline = require('readline');
 
