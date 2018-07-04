@@ -8,7 +8,7 @@
     "bot": "bot.js"
   },
   "dependencies": {
-    "cli-table2": "^0.2.0",
+    "cli-table3": "^0.5.0",
     "colors": "^1.1.2",
     "dodido-client": "^0.1.4",
     "fs-extra": "^2.0.0",
